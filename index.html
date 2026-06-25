@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Horas — Devs</title>
+<style>
+  :root {
+    --bg:#f5f4f1;--surface:#fff;--surface2:#f0efe9;
+    --border:rgba(0,0,0,0.1);--border-md:rgba(0,0,0,0.18);
+    --text:#1a1a18;--muted:#6b6b64;--hint:#9e9e94;
+    --accent:#534AB7;--accent-d:#3C3489;--accent-l:#EEEDFE;
+    --green:#3B6D11;--green-bg:#EAF3DE;
+    --amber:#854F0B;--amber-bg:#FAEEDA;
+    --gray:#5F5E5A;--gray-bg:#F1EFE8;
+    --red:#A32D2D;--red-bg:#FCEBEB;
+    --r:10px;--rs:6px;
+    --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+  .hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+  .brand-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .tabs{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:var(--rs)}
+  .tab{padding:6px 20px;border:none;background:none;border-radius:4px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;font-family:inherit}
+  .tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+  .conn{font-size:12px;color:var(--hint);display:flex;align-items:center;gap:6px}
+  .cdot{width:6px;height:6px;border-radius:50%;background:#ccc;transition:background .3s}
+  .cdot.ok{background:#639922}.cdot.err{background:#E24B4A}.cdot.loading{background:#EF9F27}
+  .main{max-width:1000px;margin:0 auto;padding:32px 24px}
+  .panel{display:none}.panel.active{display:block}
+  .page-title{font-size:22px;font-weight:600;margin-bottom:4px}
+  .page-sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow)}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .fg{margin-bottom:16px}
+  .fg label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+  .fg input,.fg select{width:100%;padding:9px 12px;border:1px solid var(--border-md);border-radius:var(--rs);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);transition:border-color .15s;-webkit-appearance:none}
+  .fg input:focus,.fg select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-l)}
+  .fg select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b64' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+  .btn-p{background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;transition:background .15s,transform .1s}
+  .btn-p:hover{background:var(--accent-d)}.btn-p:active{transform:scale(.98)}.btn-p:disabled{opacity:.5;cursor:not-allowed}
+  .btn-s{background:var(--surface);color:var(--muted);border:1px solid var(--border-md);padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+  .btn-s:hover{border-color:var(--accent);color:var(--accent)}
+  .alert{padding:10px 14px;border-radius:var(--rs);font-size:13px;margin-top:14px;display:none;font-weight:500}
+  .alert.ok{background:var(--green-bg);color:var(--green);display:block}
+  .alert.err{background:var(--red-bg);color:var(--red);display:block}
+  .dash-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+  .dash-actions{display:flex;gap:8px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:8px}
+  .kpi-val{font-size:28px;font-weight:700;line-height:1}
+  .kpi-sub{font-size:11px;color:var(--hint);margin-top:4px}
+  .kpi.ac{border-left:3px solid var(--accent)}.kpi.ac .kpi-val{color:var(--accent)}
+  .kpi.gn{border-left:3px solid #639922}.kpi.gn .kpi-val{color:var(--green)}
+  .kpi.am{border-left:3px solid #EF9F27}.kpi.am .kpi-val{color:var(--amber)}
+  .kpi.gy{border-left:3px solid #B4B2A9}.kpi.gy .kpi-val{color:var(--gray)}
+  .prog-wrap{background:var(--surface2);border-radius:20px;height:4px;margin-top:8px}
+  .prog-bar{height:4px;border-radius:20px;background:var(--accent);transition:width .4s}
+  .frow{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .frow select{padding:7px 28px 7px 12px;border:1px solid var(--border-md);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);min-width:160px;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b64' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+  .twrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .tscroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border)}
+  td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--surface2)}
+  .tfoot{padding:10px 14px;font-size:12px;color:var(--hint);text-align:right;border-top:1px solid var(--border);background:var(--surface2)}
+  .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .b-done{background:var(--green-bg);color:var(--green)}
+  .b-wip{background:var(--amber-bg);color:var(--amber)}
+  .b-pend{background:var(--gray-bg);color:var(--gray)}
+  .empty{text-align:center;padding:48px 24px;color:var(--muted)}
+  .empty-icon{font-size:28px;margin-bottom:10px;opacity:.35}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+  .spin-d{border-color:rgba(0,0,0,.1);border-top-color:var(--accent)}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .dloading{display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px}
+  .notion-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+  .nlink{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-md);border-radius:var(--rs);font-size:12px;color:var(--muted);text-decoration:none;background:var(--surface);transition:all .15s}
+  .nlink:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* TELA DE SETUP */
+  .setup-overlay{position:fixed;inset:0;background:rgba(245,244,241,.97);z-index:999;display:flex;align-items:center;justify-content:center}
+  .setup-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:36px;max-width:480px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+  .setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .setup-logo .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .setup-logo span{font-weight:700;font-size:17px}
+  .setup-box h2{font-size:18px;font-weight:600;margin-bottom:8px}
+  .setup-box p{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+  .setup-box .fg{margin-bottom:20px}
+  .setup-hint{font-size:11px;color:var(--hint);margin-top:6px;line-height:1.5}
+  .setup-hint a{color:var(--accent);text-decoration:none}
+
+  @media(max-width:640px){
+    .hdr{padding:0 16px}.main{padding:20px 16px}
+    .kpis{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}
+    .brand span{display:none}.frow{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP: aparece apenas na primeira vez -->
+<div class="setup-overlay" id="setup-overlay">
+  <div class="setup-box">
+    <div class="setup-logo"><div class="dot"></div><span>Controle de Horas</span></div>
+    <h2>Configure sua conexão</h2>
+    <p>Para usar o app, informe o token de acesso ao Notion. Ele será salvo apenas no seu navegador e não ficará exposto em nenhum código público.</p>
+    <div class="fg">
+      <label>Notion Integration Token</label>
+      <input id="setup-token" type="password" placeholder="ntn_...">
+      <p class="setup-hint">Encontre em <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a> → selecione sua integração → copie o token.</p>
+    </div>
+    <button class="btn-p" style="width:100%;justify-content:center" onclick="saveSetup()">
+      Conectar e entrar
+    </button>
+    <div id="setup-alert" class="alert"></div>
+  </div>
+</div>
+
+<header class="hdr">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span>Controle de Horas</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('form')">Lançamento</button>
+    <button class="tab" onclick="switchTab('dash')">Painel</button>
+  </div>
+  <div class="conn" style="gap:10px">
+    <div class="cdot" id="cdot"></div>
+    <span id="ctext">Iniciando...</span>
+    <button onclick="resetSetup()" title="Trocar token" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:11px;padding:2px 6px;border-radius:4px;font-family:inherit">⚙</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- FORMULÁRIO -->
+  <div id="pform" class="panel active">
+    <p class="page-title">Novo lançamento</p>
+    <p class="page-sub">Preencha os dados e salve. O registro vai direto para o Notion.</p>
+    <div class="card">
+      <div class="g2">
+        <div class="fg"><label>Número / ID *</label><input id="f-num" type="text" placeholder="Ex: TKT-001"></div>
+        <div class="fg"><label>Responsável *</label><input id="f-resp" type="text" placeholder="Seu nome"></div>
+      </div>
+      <div class="fg"><label>Descrição da demanda *</label><input id="f-desc" type="text" placeholder="Descreva a atividade realizada"></div>
+      <div class="g3">
+        <div class="fg"><label>Esforço (horas) *</label><input id="f-esf" type="number" min="0.5" step="0.5" placeholder="Ex: 4"></div>
+        <div class="fg"><label>Data início</label><input id="f-ini" type="date"></div>
+        <div class="fg"><label>Data fim</label><input id="f-fim" type="date"></div>
+      </div>
+      <div class="g2">
+        <div class="fg">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="Pendente">Pendente</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Executado">Executado</option>
+          </select>
+        </div>
+        <div class="fg"><label>Observações</label><input id="f-obs" type="text" placeholder="Notas adicionais (opcional)"></div>
+      </div>
+      <button class="btn-p" id="btn-salvar" onclick="salvar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar no Notion
+      </button>
+      <div id="falert" class="alert"></div>
+    </div>
+    <div class="notion-links">
+      <a class="nlink" href="https://app.notion.com/p/0df9c50bbfbe49a3b15e775074df3b11" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Banco no Notion
+      </a>
+      <a class="nlink" href="https://app.notion.com/p/c7c0f16222d244939ce7b8a9468f7dec" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Tabela
+      </a>
+      <a class="nlink" href="https://app.notion.com/p/bd10b656764943c293c3d7a862979772" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Kanban
+      </a>
+      <a class="nlink" href="https://app.notion.com/p/446a50e1a35048039eff17b32513e55c" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Timeline
+      </a>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="pdash" class="panel">
+    <div class="dash-top">
+      <div>
+        <p class="page-title">Painel de controle</p>
+        <p class="page-sub">Visão consolidada de todas as demandas lançadas</p>
+      </div>
+      <div class="dash-actions">
+        <button class="btn-s" onclick="loadDash()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar
+        </button>
+        <button class="btn-s" onclick="exportCSV()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar CSV
+        </button>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi ac"><div class="kpi-label">Total de horas</div><div class="kpi-val" id="k-h">—</div><div class="kpi-sub" id="k-total">—</div></div>
+      <div class="kpi gn"><div class="kpi-label">Executadas</div><div class="kpi-val" id="k-exec">—</div><div class="prog-wrap"><div class="prog-bar" id="k-prog" style="width:0%"></div></div></div>
+      <div class="kpi am"><div class="kpi-label">Em andamento</div><div class="kpi-val" id="k-wip">—</div><div class="kpi-sub">demandas ativas</div></div>
+      <div class="kpi gy"><div class="kpi-label">Pendentes</div><div class="kpi-val" id="k-pend">—</div><div class="kpi-sub">aguardando início</div></div>
+    </div>
+    <div class="frow">
+      <select id="flt-resp" onchange="renderTable()"><option value="">Todos os responsáveis</option></select>
+      <select id="flt-status" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Pendente</option><option>Em andamento</option><option>Executado</option>
+      </select>
+      <button class="btn-s" onclick="clearFilters()" style="min-width:unset;padding:7px 12px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Limpar
+      </button>
+    </div>
+    <div class="dloading" id="dloading">
+      <div class="spin spin-d" style="width:22px;height:22px;display:block;margin:0 auto 12px"></div>
+      Carregando dados do Notion...
+    </div>
+    <div class="twrap" id="twrap">
+      <div class="tscroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:95px">Número</th>
+              <th style="width:140px">Responsável</th>
+              <th>Demanda</th>
+              <th style="width:80px">Esforço</th>
+              <th style="width:95px">Início</th>
+              <th style="width:95px">Fim</th>
+              <th style="width:120px">Status</th>
+              <th style="width:150px">Observações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="8"><div class="empty"><div class="empty-icon">📋</div><p>Clique em "Atualizar" para carregar</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot" id="tfoot"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const DB_ID      = '0df9c50bbfbe49a3b15e775074df3b11';
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const MODEL      = 'claude-sonnet-4-6';
+const LS_KEY     = 'ctrl_horas_token';
+
+let rows = [];
+
+// ── TOKEN (localStorage — nunca exposto no código) ────────────────────────────
+function getToken() { return localStorage.getItem(LS_KEY) || ''; }
+function setToken(t) { localStorage.setItem(LS_KEY, t); }
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+async function saveSetup() {
+  const token = document.getElementById('setup-token').value.trim();
+  const al    = document.getElementById('setup-alert');
+  al.className = 'alert'; al.style.display = 'none';
+
+  if (!token.startsWith('ntn_') && !token.startsWith('secret_')) {
+    al.textContent = 'Token inválido. Deve começar com ntn_ ou secret_';
+    al.className = 'alert err'; return;
+  }
+
+  // testa conexão
+  al.textContent = 'Verificando token...';
+  al.className = 'alert ok';
+
+  try {
+    setToken(token);
+    await notionViaProxy('GET', `databases/${DB_ID}`);
+    document.getElementById('setup-overlay').style.display = 'none';
+    setConn('ok', 'Conectado ao Notion');
+  } catch(e) {
+    localStorage.removeItem(LS_KEY);
+    al.textContent = 'Token inválido ou sem acesso ao banco. Verifique e tente novamente.';
+    al.className = 'alert err';
+  }
+}
+
+function resetSetup() {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById('setup-token').value = '';
+  document.getElementById('setup-alert').className = 'alert';
+  document.getElementById('setup-overlay').style.display = 'flex';
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setConn(state, msg) {
+  document.getElementById('cdot').className = 'cdot' + (state ? ' ' + state : '');
+  document.getElementById('ctext').textContent = msg;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i) => b.classList.toggle('active', i===(t==='form'?0:1)));
+  document.getElementById('pform').classList.toggle('active', t==='form');
+  document.getElementById('pdash').classList.toggle('active', t==='dash');
+  if (t === 'dash') loadDash();
+}
+
+// ── PROXY VIA CLAUDE API ──────────────────────────────────────────────────────
+async function notionViaProxy(method, endpoint, body) {
+  const token   = getToken();
+  const bodyStr = body ? JSON.stringify(body) : 'none';
+
+  const prompt = `Make an HTTP request to the Notion API and return ONLY the raw JSON response. No explanations, no markdown, no code blocks — just the raw JSON.
+
+Request:
+- URL: https://api.notion.com/v1/${endpoint}
+- Method: ${method}
+- Headers: Authorization: Bearer ${token} | Notion-Version: 2022-06-28 | Content-Type: application/json
+- Body: ${bodyStr}
+
+Return ONLY the raw JSON response.`;
+
+  const res = await fetch(CLAUDE_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4096,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) throw new Error('Erro Claude API: ' + res.status);
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type==='text').map(b => b.text).join('');
+  const clean = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/,'').trim();
+
+  let parsed;
+  try { parsed = JSON.parse(clean); }
+  catch { throw new Error('Resposta inesperada: ' + clean.slice(0,150)); }
+  if (parsed.object === 'error') throw new Error(parsed.message || parsed.code);
+  return parsed;
+}
+
+// ── SALVAR ────────────────────────────────────────────────────────────────────
+async function salvar() {
+  const num    = document.getElementById('f-num').value.trim();
+  const resp   = document.getElementById('f-resp').value.trim();
+  const desc   = document.getElementById('f-desc').value.trim();
+  const esf    = parseFloat(document.getElementById('f-esf').value);
+  const ini    = document.getElementById('f-ini').value;
+  const fim    = document.getElementById('f-fim').value;
+  const status = document.getElementById('f-status').value;
+  const obs    = document.getElementById('f-obs').value.trim();
+  const al     = document.getElementById('falert');
+
+  al.className = 'alert'; al.style.display = 'none';
+  if (!num || !resp || !desc || isNaN(esf) || esf <= 0) {
+    al.textContent = 'Preencha os campos obrigatórios: Número, Responsável, Demanda e Esforço.';
+    al.className = 'alert err'; return;
+  }
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Salvando...';
+  setConn('loading', 'Salvando...');
+
+  try {
+    const props = {
+      "Demanda":     { title:     [{ text: { content: desc } }] },
+      "Número":      { rich_text: [{ text: { content: num  } }] },
+      "Responsável": { rich_text: [{ text: { content: resp } }] },
+      "Esforço (h)": { number: esf },
+      "Status":      { status: { name: status } }
+    };
+    if (ini) props["Início"] = { date: { start: ini } };
+    if (fim) props["Fim"]    = { date: { start: fim } };
+    if (obs) props["Observações"] = { rich_text: [{ text: { content: obs } }] };
+
+    await notionViaProxy('POST', 'pages', { parent: { database_id: DB_ID }, properties: props });
+
+    setConn('ok', 'Salvo!');
+    al.textContent = '✓ Lançamento salvo com sucesso no Notion!';
+    al.className = 'alert ok';
+    ['f-num','f-resp','f-desc','f-esf','f-ini','f-fim','f-obs'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-status').value = 'Pendente';
+    setTimeout(() => { al.style.display = 'none'; setConn('ok','Conectado'); }, 4000);
+  } catch(e) {
+    setConn('err', 'Erro');
+    al.textContent = '✗ Erro: ' + e.message;
+    al.className = 'alert err';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no Notion';
+  }
+}
+
+// ── PAINEL ────────────────────────────────────────────────────────────────────
+async function loadDash() {
+  document.getElementById('dloading').style.display = 'block';
+  document.getElementById('twrap').style.display = 'none';
+  setConn('loading', 'Carregando...');
+  try {
+    let all = [], cursor;
+    do {
+      const body = { sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 };
+      if (cursor) body.start_cursor = cursor;
+      const data = await notionViaProxy('POST', `databases/${DB_ID}/query`, body);
+      all = all.concat(data.results || []);
+      cursor = data.has_more ? data.next_cursor : null;
+    } while (cursor);
+
+    rows = all.map(p => {
+      const pr = p.properties;
+      return {
+        num:    pr['Número']?.rich_text?.[0]?.text?.content || '',
+        resp:   pr['Responsável']?.rich_text?.[0]?.text?.content || '',
+        desc:   pr['Demanda']?.title?.[0]?.text?.content || '',
+        esf:    pr['Esforço (h)']?.number ?? 0,
+        ini:    pr['Início']?.date?.start || '',
+        fim:    pr['Fim']?.date?.start || '',
+        status: pr['Status']?.status?.name || 'Pendente',
+        obs:    pr['Observações']?.rich_text?.[0]?.text?.content || ''
+      };
+    });
+    populateFilters(); renderTable();
+    setConn('ok', 'Sincronizado');
+  } catch(e) {
+    setConn('err', 'Erro');
+    document.getElementById('tbody').innerHTML =
+      `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><p>${e.message}</p></div></td></tr>`;
+    document.getElementById('twrap').style.display = 'block';
+  } finally {
+    document.getElementById('dloading').style.display = 'none';
+    document.getElementById('twrap').style.display = 'block';
+  }
+}
+
+function populateFilters() {
+  const resps = [...new Set(rows.map(r=>r.resp))].filter(Boolean).sort();
+  const sel = document.getElementById('flt-resp');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os responsáveis</option>' +
+    resps.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');
+}
+
+function renderTable() {
+  const fR=document.getElementById('flt-resp').value;
+  const fS=document.getElementById('flt-status').value;
+  const fil=rows.filter(r=>(!fR||r.resp===fR)&&(!fS||r.status===fS));
+  const totalH=fil.reduce((a,r)=>a+r.esf,0);
+  const exec=fil.filter(r=>r.status==='Executado').length;
+  const wip=fil.filter(r=>r.status==='Em andamento').length;
+  const pend=fil.filter(r=>r.status==='Pendente').length;
+  const pct=fil.length?Math.round(exec/fil.length*100):0;
+  document.getElementById('k-h').textContent=totalH+'h';
+  document.getElementById('k-total').textContent=fil.length+' demanda'+(fil.length!==1?'s':'');
+  document.getElementById('k-exec').textContent=exec;
+  document.getElementById('k-wip').textContent=wip;
+  document.getElementById('k-pend').textContent=pend;
+  document.getElementById('k-prog').style.width=pct+'%';
+  const fmt=s=>{if(!s)return'—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`;};
+  const badge=s=>{const c=s==='Executado'?'b-done':s==='Em andamento'?'b-wip':'b-pend';return`<span class="badge ${c}">${s}</span>`;};
+  const tbody=document.getElementById('tbody');
+  if(!fil.length){
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro encontrado.</p></div></td></tr>`;
+    document.getElementById('tfoot').textContent='';return;
+  }
+  tbody.innerHTML=fil.map(r=>`<tr>
+    <td title="${r.num}">${r.num||'—'}</td><td title="${r.resp}">${r.resp||'—'}</td>
+    <td title="${r.desc}">${r.desc||'—'}</td><td>${r.esf?r.esf+'h':'—'}</td>
+    <td>${fmt(r.ini)}</td><td>${fmt(r.fim)}</td>
+    <td>${badge(r.status)}</td><td title="${r.obs}">${r.obs||'—'}</td>
+  </tr>`).join('');
+  document.getElementById('tfoot').textContent=`${fil.length} demanda${fil.length!==1?'s':''} · ${totalH}h total`;
+}
+
+function clearFilters(){document.getElementById('flt-resp').value='';document.getElementById('flt-status').value='';renderTable();}
+
+function exportCSV(){
+  const fR=document.getElementById('flt-resp').value;
+  const fS=document.getElementById('flt-status').value;
+  const fil=rows.filter(r=>(!fR||r.resp===fR)&&(!fS||r.status===fS));
+  if(!fil.length){alert('Nenhum dado para exportar.');return;}
+  const hdr='Número,Responsável,Demanda,"Esforço (h)",Início,Fim,Status,Observações\n';
+  const body=fil.map(r=>[r.num,`"${r.resp}"`,`"${r.desc}"`,r.esf,r.ini,r.fim,r.status,`"${r.obs}"`].join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+hdr+body],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='controle_horas_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(async () => {
+  const token = getToken();
+  if (!token) {
+    // primeira vez: mostra tela de setup
+    document.getElementById('setup-overlay').style.display = 'flex';
+    setConn('', 'Aguardando configuração');
+  } else {
+    document.getElementById('setup-overlay').style.display = 'none';
+    try {
+      await notionViaProxy('GET', `databases/${DB_ID}`);
+      setConn('ok', 'Conectado ao Notion');
+    } catch {
+      setConn('err', 'Erro de conexão');
+    }
+  }
+})();
+</script>
+</body>
+</html>
