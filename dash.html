@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Controle de Horas</title>
+<style>
+  :root{
+    --bg:#f5f4f1;--surface:#fff;--surface2:#f0efe9;
+    --border:rgba(0,0,0,0.09);--border-md:rgba(0,0,0,0.15);
+    --text:#1a1a18;--muted:#6b6b64;--hint:#9e9e94;
+    --accent:#534AB7;--accent-d:#3C3489;--accent-l:#EEEDFE;
+    --green:#3B6D11;--green-bg:#EAF3DE;
+    --amber:#854F0B;--amber-bg:#FAEEDA;
+    --gray:#5F5E5A;--gray-bg:#F1EFE8;
+    --red:#A32D2D;--red-bg:#FCEBEB;
+    --r:12px;--rs:7px;
+    --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+  .hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px}
+  .bdot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .hdr-right{display:flex;align-items:center;gap:12px}
+  .conn{font-size:12px;color:var(--hint);display:flex;align-items:center;gap:5px}
+  .cdot{width:6px;height:6px;border-radius:50%;background:#ccc}
+  .cdot.ok{background:#639922}.cdot.err{background:#E24B4A}.cdot.loading{background:#EF9F27}
+  .btn-s{background:var(--surface);color:var(--muted);border:1px solid var(--border-md);padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .btn-s:hover{border-color:var(--accent);color:var(--accent)}
+
+  .main{max-width:1080px;margin:0 auto;padding:28px 20px}
+
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi.ac{border-left:3px solid var(--accent)}
+  .kpi.gn{border-left:3px solid #639922}
+  .kpi.am{border-left:3px solid #EF9F27}
+  .kpi.gy{border-left:3px solid #B4B2A9}
+  .kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:8px}
+  .kpi-val{font-size:28px;font-weight:800;line-height:1}
+  .kpi.ac .kpi-val{color:var(--accent)}
+  .kpi.gn .kpi-val{color:var(--green)}
+  .kpi.am .kpi-val{color:var(--amber)}
+  .kpi.gy .kpi-val{color:var(--gray)}
+  .kpi-sub{font-size:11px;color:var(--hint);margin-top:4px}
+  .prog-wrap{background:var(--surface2);border-radius:20px;height:4px;margin-top:8px}
+  .prog-bar{height:4px;border-radius:20px;background:var(--accent);transition:width .5s}
+
+  /* CHARTS ROW */
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+  .chart-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--hint);margin-bottom:14px}
+
+  /* BAR CHART */
+  .bar-list{display:flex;flex-direction:column;gap:9px}
+  .bar-item{}
+  .bar-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .bar-name{color:var(--text);font-weight:500;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-val{color:var(--muted);font-weight:600}
+  .bar-track{background:var(--surface2);border-radius:20px;height:7px;overflow:hidden}
+  .bar-fill{height:7px;border-radius:20px;background:var(--accent);transition:width .5s}
+
+  /* DONUT */
+  .donut-wrap{display:flex;align-items:center;gap:20px}
+  .donut-svg{flex-shrink:0}
+  .donut-legend{display:flex;flex-direction:column;gap:8px;flex:1}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .legend-label{color:var(--muted);flex:1}
+  .legend-val{font-weight:600;color:var(--text)}
+
+  /* FILTERS */
+  .filter-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .filter-row select{padding:7px 28px 7px 11px;border:1px solid var(--border-md);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);min-width:155px;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b64' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+  .filter-row select:focus{outline:none;border-color:var(--accent)}
+
+  /* TABLE */
+  .twrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .tscroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:var(--surface2);padding:10px 13px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border)}
+  td{padding:11px 13px;border-bottom:1px solid var(--border);color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--surface2)}
+  .tfoot{padding:9px 13px;font-size:12px;color:var(--hint);text-align:right;border-top:1px solid var(--border);background:var(--surface2)}
+
+  .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+  .b-done{background:var(--green-bg);color:var(--green)}
+  .b-wip{background:var(--amber-bg);color:var(--amber)}
+  .b-pend{background:var(--gray-bg);color:var(--gray)}
+
+  .empty{text-align:center;padding:44px 24px;color:var(--muted)}
+  .empty-icon{font-size:28px;margin-bottom:10px;opacity:.35}
+
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+
+  @media(max-width:700px){
+    .kpis{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}
+    .hdr{padding:0 16px}.main{padding:20px 14px}
+    .brand span{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="brand"><div class="bdot"></div><span>Painel de Horas</span></div>
+  <div class="hdr-right">
+    <div class="conn"><div class="cdot" id="cdot"></div><span id="ctext">Carregando...</span></div>
+    <button class="btn-s" onclick="loadData()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar
+    </button>
+    <button class="btn-s" onclick="exportCSV()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
+    </button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi ac"><div class="kpi-label">Total de horas</div><div class="kpi-val" id="k-h">—</div><div class="kpi-sub" id="k-dem">—</div></div>
+    <div class="kpi gn"><div class="kpi-label">Executadas</div><div class="kpi-val" id="k-exec">—</div><div class="prog-wrap"><div class="prog-bar" id="k-prog" style="width:0%"></div></div></div>
+    <div class="kpi am"><div class="kpi-label">Em andamento</div><div class="kpi-val" id="k-wip">—</div><div class="kpi-sub">demandas ativas</div></div>
+    <div class="kpi gy"><div class="kpi-label">Pendentes</div><div class="kpi-val" id="k-pend">—</div><div class="kpi-sub">aguardando início</div></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts">
+    <div class="chart-card">
+      <div class="chart-title">Horas por responsável</div>
+      <div class="bar-list" id="chart-resp"><div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribuição por status</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-svg">
+          <circle cx="55" cy="55" r="42" fill="none" stroke="#f0efe9" stroke-width="16"/>
+          <circle id="d-exec" cx="55" cy="55" r="42" fill="none" stroke="#639922" stroke-width="16" stroke-dasharray="0 264" stroke-dashoffset="66" stroke-linecap="round" style="transition:stroke-dasharray .5s"/>
+          <circle id="d-wip"  cx="55" cy="55" r="42" fill="none" stroke="#EF9F27" stroke-width="16" stroke-dasharray="0 264" stroke-dashoffset="66" stroke-linecap="round" style="transition:stroke-dasharray .5s"/>
+          <circle id="d-pend" cx="55" cy="55" r="42" fill="none" stroke="#B4B2A9" stroke-width="16" stroke-dasharray="0 264" stroke-dashoffset="66" stroke-linecap="round" style="transition:stroke-dasharray .5s"/>
+          <text x="55" y="51" text-anchor="middle" font-size="18" font-weight="800" fill="#1a1a18" id="d-pct">—</text>
+          <text x="55" y="65" text-anchor="middle" font-size="10" fill="#9e9e94">concluído</text>
+        </svg>
+        <div class="donut-legend" id="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#639922"></div><span class="legend-label">Executado</span><span class="legend-val" id="l-exec">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div><span class="legend-label">Em andamento</span><span class="legend-val" id="l-wip">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#B4B2A9"></div><span class="legend-label">Pendente</span><span class="legend-val" id="l-pend">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section-title">Histórico de lançamentos</div>
+  <div class="filter-row">
+    <select id="flt-resp" onchange="render()"><option value="">Todos os responsáveis</option></select>
+    <select id="flt-status" onchange="render()">
+      <option value="">Todos os status</option>
+      <option>Pendente</option><option>Em andamento</option><option>Executado</option>
+    </select>
+    <button class="btn-s" onclick="clearF()" style="min-width:unset">✕ Limpar</button>
+  </div>
+  <div class="twrap">
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px">Número</th>
+            <th style="width:130px">Responsável</th>
+            <th>Demanda</th>
+            <th style="width:75px">Esforço</th>
+            <th style="width:90px">Início</th>
+            <th style="width:90px">Fim</th>
+            <th style="width:115px">Status</th>
+            <th style="width:130px">Enviado em</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="8"><div class="empty"><div class="empty-icon">⏳</div><p>Carregando...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tfoot" id="tfoot"></div>
+  </div>
+</main>
+
+<script>
+// ⚙️ COLE AQUI O ID DA SUA PLANILHA GOOGLE SHEETS
+const SHEET_ID  = '18PEQnwp4pUC-pWYJhHhSz2XgAZIsYtuM05LT5hH3fUQ';
+const SHEET_NAME = 'Lançamentos';
+
+let allRows = [];
+
+function setConn(s,m){document.getElementById('cdot').className='cdot'+(s?' '+s:'');document.getElementById('ctext').textContent=m;}
+
+async function loadData() {
+  setConn('loading','Carregando...');
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows = json.table.rows || [];
+
+    allRows = rows.map(r => ({
+      num:    r.c[0]?.v || '',
+      resp:   r.c[1]?.v || '',
+      desc:   r.c[2]?.v || '',
+      esf:    parseFloat(r.c[3]?.v) || 0,
+      ini:    r.c[4]?.v || '',
+      fim:    r.c[5]?.v || '',
+      status: r.c[6]?.v || 'Pendente',
+      obs:    r.c[7]?.v || '',
+      data:   r.c[8]?.v || ''
+    })).filter(r => r.resp);
+
+    populateFilters();
+    render();
+    setConn('ok','Atualizado');
+  } catch(e) {
+    setConn('err','Erro ao carregar');
+    document.getElementById('tbody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><p>Configure o ID da planilha no código.</p></div></td></tr>`;
+  }
+}
+
+function populateFilters(){
+  const resps=[...new Set(allRows.map(r=>r.resp))].filter(Boolean).sort();
+  const sel=document.getElementById('flt-resp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todos os responsáveis</option>'+resps.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');
+}
+
+function render(){
+  const fR=document.getElementById('flt-resp').value;
+  const fS=document.getElementById('flt-status').value;
+  const fil=allRows.filter(r=>(!fR||r.resp===fR)&&(!fS||r.status===fS));
+
+  const totalH=fil.reduce((a,r)=>a+r.esf,0);
+  const exec=fil.filter(r=>r.status==='Executado').length;
+  const wip=fil.filter(r=>r.status==='Em andamento').length;
+  const pend=fil.filter(r=>r.status==='Pendente').length;
+  const pct=fil.length?Math.round(exec/fil.length*100):0;
+
+  document.getElementById('k-h').textContent=totalH+'h';
+  document.getElementById('k-dem').textContent=fil.length+' demanda'+(fil.length!==1?'s':'');
+  document.getElementById('k-exec').textContent=exec;
+  document.getElementById('k-wip').textContent=wip;
+  document.getElementById('k-pend').textContent=pend;
+  document.getElementById('k-prog').style.width=pct+'%';
+  document.getElementById('l-exec').textContent=exec;
+  document.getElementById('l-wip').textContent=wip;
+  document.getElementById('l-pend').textContent=pend;
+  document.getElementById('d-pct').textContent=pct+'%';
+
+  // donut
+  const circ=2*Math.PI*42; // 263.9
+  const eArc=fil.length?(exec/fil.length)*circ:0;
+  const wArc=fil.length?(wip/fil.length)*circ:0;
+  const pArc=fil.length?(pend/fil.length)*circ:0;
+  const offset=66;
+  document.getElementById('d-exec').setAttribute('stroke-dasharray',`${eArc} ${circ-eArc}`);
+  document.getElementById('d-exec').setAttribute('stroke-dashoffset',offset);
+  document.getElementById('d-wip').setAttribute('stroke-dasharray',`${wArc} ${circ-wArc}`);
+  document.getElementById('d-wip').setAttribute('stroke-dashoffset',offset-(eArc));
+  document.getElementById('d-pend').setAttribute('stroke-dasharray',`${pArc} ${circ-pArc}`);
+  document.getElementById('d-pend').setAttribute('stroke-dashoffset',offset-(eArc+wArc));
+
+  // bar chart por responsável
+  const byResp={};
+  fil.forEach(r=>{byResp[r.resp]=(byResp[r.resp]||0)+r.esf;});
+  const sorted=Object.entries(byResp).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxH=sorted[0]?.[1]||1;
+  const barEl=document.getElementById('chart-resp');
+  if(!sorted.length){barEl.innerHTML='<div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div>';return;}
+  barEl.innerHTML=sorted.map(([name,h])=>`
+    <div class="bar-item">
+      <div class="bar-meta"><span class="bar-name">${name}</span><span class="bar-val">${h}h</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(h/maxH*100).toFixed(1)}%"></div></div>
+    </div>`).join('');
+
+  // tabela
+  const badge=s=>{const c=s==='Executado'?'b-done':s==='Em andamento'?'b-wip':'b-pend';return`<span class="badge ${c}">${s}</span>`;};
+  const tbody=document.getElementById('tbody');
+  if(!fil.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro encontrado.</p></div></td></tr>`;document.getElementById('tfoot').textContent='';return;}
+  tbody.innerHTML=[...fil].reverse().map(r=>`<tr>
+    <td title="${r.num}">${r.num||'—'}</td>
+    <td title="${r.resp}">${r.resp||'—'}</td>
+    <td title="${r.desc}">${r.desc||'—'}</td>
+    <td>${r.esf?r.esf+'h':'—'}</td>
+    <td>${r.ini||'—'}</td><td>${r.fim||'—'}</td>
+    <td>${badge(r.status)}</td>
+    <td>${r.data||'—'}</td>
+  </tr>`).join('');
+  document.getElementById('tfoot').textContent=`${fil.length} demanda${fil.length!==1?'s':''} · ${totalH}h total`;
+}
+
+function clearF(){document.getElementById('flt-resp').value='';document.getElementById('flt-status').value='';render();}
+
+function exportCSV(){
+  if(!allRows.length){alert('Nenhum dado para exportar.');return;}
+  const h='Número,Responsável,Demanda,"Esforço (h)",Início,Fim,Status,Observações,Enviado em\n';
+  const b=allRows.map(r=>[r.num,`"${r.resp}"`,`"${r.desc}"`,r.esf,r.ini,r.fim,r.status,`"${r.obs}"`,`"${r.data}"`].join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+h+b],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='horas_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+loadData();
+</script>
+</body>
+</html>
