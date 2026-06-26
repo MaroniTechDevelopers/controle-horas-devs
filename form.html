@@ -74,7 +74,14 @@
 
       <div class="fg">
         <label>Responsável *</label>
-        <input id="f-resp" type="text" placeholder="Seu nome completo" autocomplete="name">
+        <select id="f-resp-sel" onchange="toggleResp(this.value)">
+            <option value="">Selecione o responsável...</option>
+            <option value="Dedicado">Dedicado</option>
+            <option value="Carteira">Carteira</option>
+            <option value="Outro">Outro (digitar manualmente)</option>
+          </select>
+          <input id="f-resp" type="text" placeholder="Digite o nome completo"
+            style="display:none;margin-top:8px">
       </div>
 
       <div class="fg">
@@ -144,12 +151,28 @@
 </div>
 
 <script>
+function toggleResp(val) {
+  const input = document.getElementById('f-resp');
+  const sel = document.getElementById('f-resp-sel');
+  if (val === 'Outro') {
+    input.style.display = 'block';
+    input.value = '';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = val;
+  }
+}
+
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbys-n1WJ4KdO70S2ckl92EHj9WLkDasfEzbGWf-GPqY0Q1zT2sI3SwdIrG6_6uLIt6d6g/exec';
 
 async function salvar() {
   const num     = document.getElementById('f-num').value.trim();
   const versao  = document.getElementById('f-versao').value.trim();
-  const resp    = document.getElementById('f-resp').value.trim();
+  const respSel = document.getElementById('f-resp-sel').value;
+  const resp    = respSel === 'Outro'
+    ? document.getElementById('f-resp').value.trim()
+    : document.getElementById('f-resp').value.trim();
   const desc    = document.getElementById('f-desc').value.trim();
   const esfEst  = parseFloat(document.getElementById('f-esf-est').value);
   const esfReal = parseFloat(document.getElementById('f-esf-real').value) || '';
@@ -160,7 +183,7 @@ async function salvar() {
   const al      = document.getElementById('alert');
 
   al.className = 'alert'; al.style.display = 'none';
-  if (!num || !resp || !desc || isNaN(esfEst) || esfEst <= 0) {
+  if (!num || !resp || resp === '' || !desc || isNaN(esfEst) || esfEst <= 0) {
     al.textContent = 'Preencha os campos obrigatórios: Número, Responsável, Demanda e Esforço estimado.';
     al.className = 'alert err'; return;
   }
@@ -169,8 +192,8 @@ async function salvar() {
     al.className = 'alert err'; return;
   }
   const btn = document.getElementById('btn-salvar');
-  if (!isNaN(esfReal) && esfReal > 0 && esfReal > esfEst * 1.5) {
-    const confirma = confirm(`O realizado (${esfReal}h) está ${Math.round(esfReal/esfEst*100)}% acima do estimado (${esfEst}h). Confirma o lançamento?`);
+  if (!isNaN(esfReal) && esfReal > 0 && esfReal > esfEst) {
+    const confirma = confirm(`⚠️ Atenção: o realizado (${esfReal}h) está acima do estimado (${esfEst}h) — ${Math.round(esfReal/esfEst*100)}% do previsto.\n\nConfirma o lançamento?`);
     if (!confirma) return;
   }
   btn.disabled = true;
@@ -196,6 +219,8 @@ async function salvar() {
 }
 
 function novo() {
+  document.getElementById('f-resp-sel').value = '';
+  document.getElementById('f-resp').style.display = 'none';
   ['f-num','f-versao','f-resp','f-desc','f-esf-est','f-esf-real','f-ini','f-fim','f-obs'].forEach(id => {
     document.getElementById(id).value = '';
   });
