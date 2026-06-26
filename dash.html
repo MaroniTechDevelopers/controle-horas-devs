@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel — Controle de Horas | Grupo Maroni</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#F9F7F0;--surface:#fff;--surface2:#FFF9E0;
@@ -14,13 +15,11 @@
     --amber:#854F0B;--amber-bg:#FAEEDA;
     --gray:#5F5E5A;--gray-bg:#F1EFE8;
     --red:#A32D2D;--red-bg:#FCEBEB;
-    --blue:#185FA5;--blue-bg:#E6F1FB;
     --r:12px;--rs:7px;
     --shadow:0 1px 3px rgba(0,0,0,0.06);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
-
   .hdr{background:#FFD700;border-bottom:2px solid #E6C200;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100}
   .brand{display:flex;align-items:center;gap:12px}
   .brand img{height:36px;object-fit:contain}
@@ -30,104 +29,71 @@
   .conn{font-size:12px;color:#1A1A18;font-weight:600;display:flex;align-items:center;gap:5px}
   .cdot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.25)}
   .cdot.ok{background:#2D5A0F}.cdot.err{background:#C0392B}.cdot.loading{background:#7B4F00}
-  .btn-s{background:rgba(0,0,0,0.09);color:#1A1A18;border:1px solid rgba(0,0,0,0.15);padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .btn-s{background:rgba(0,0,0,0.09);color:#1A1A18;border:1px solid rgba(0,0,0,0.15);padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s;text-decoration:none}
   .btn-s:hover{background:rgba(0,0,0,0.15)}
-
   .main{max-width:1100px;margin:0 auto;padding:26px 20px}
-
-  /* KPIs */
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
   .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
-  .kpi.ac{border-left:3px solid #FFD700;background:var(--accent-l);border-radius:0 var(--r) var(--r) 0}
-  .kpi.gn{border-left:3px solid #639922;border-radius:0 var(--r) var(--r) 0}
-  .kpi.am{border-left:3px solid #EF9F27;border-radius:0 var(--r) var(--r) 0}
-  .kpi.gy{border-left:3px solid #B4B2A9;border-radius:0 var(--r) var(--r) 0}
-  .kpi.rd{border-left:3px solid #E24B4A;background:var(--red-bg);border-radius:0 var(--r) var(--r) 0}
+  .kpi.ac{border-left:3px solid #FFD700;background:var(--accent-l)}
+  .kpi.gn{border-left:3px solid #639922}.kpi.am{border-left:3px solid #EF9F27}
+  .kpi.gy{border-left:3px solid #B4B2A9}.kpi.rd{border-left:3px solid #E24B4A;background:var(--red-bg)}
   .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--hint);margin-bottom:6px}
   .kpi-val{font-size:24px;font-weight:700;line-height:1}
-  .kpi.ac .kpi-val{color:#1A1A18}
-  .kpi.gn .kpi-val{color:var(--green)}
-  .kpi.am .kpi-val{color:var(--amber)}
-  .kpi.gy .kpi-val{color:var(--gray)}
-  .kpi.rd .kpi-val{color:var(--red)}
+  .kpi.ac .kpi-val{color:#1A1A18}.kpi.gn .kpi-val{color:var(--green)}
+  .kpi.am .kpi-val{color:var(--amber)}.kpi.gy .kpi-val{color:var(--gray)}.kpi.rd .kpi-val{color:var(--red)}
   .kpi-sub{font-size:11px;color:var(--hint);margin-top:3px}
   .prog-wrap{background:var(--surface2);border-radius:20px;height:4px;margin-top:7px}
-  .prog-bar{height:4px;border-radius:20px;background:#FFD700;border:0.5px solid #E6C200;transition:width .5s}
-
-  /* EFICIÊNCIA BANNER */
-  .eficiencia-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+  .prog-bar{height:4px;border-radius:20px;background:#FFD700;transition:width .5s}
+  .efi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
   .efi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
   .efi-icon{font-size:24px;flex-shrink:0}
   .efi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:3px}
   .efi-val{font-size:20px;font-weight:700}
   .efi-sub{font-size:11px;color:var(--hint);margin-top:2px}
   .efi-ok{color:var(--green)}.efi-warn{color:var(--red)}.efi-neutral{color:var(--gray)}
-
-  /* CHARTS */
   .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:20px}
   .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
   .chart-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--hint);margin-bottom:12px}
   .bar-item{margin-bottom:9px}
   .bar-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
-  .bar-name{color:var(--text);font-weight:500;max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bar-vals{color:var(--muted);display:flex;gap:8px;align-items:center;font-size:11px;white-space:nowrap}
-  .bar-est{color:var(--hint)}
+  .bar-name{color:var(--text);font-weight:500;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-vals{color:var(--muted);display:flex;gap:8px;font-size:11px;white-space:nowrap}
   .bar-real{font-weight:700;color:var(--text)}
   .bar-track{background:var(--bg);border-radius:20px;height:7px;position:relative}
   .bar-est-fill{height:7px;border-radius:20px;background:#E6C200;opacity:.35;position:absolute;top:0;left:0}
   .bar-real-fill{height:7px;border-radius:20px;background:#FFD700;border:0.5px solid #E6C200;position:absolute;top:0;left:0;transition:width .5s}
-
-  /* STATUS PILLS */
-  .status-list{display:flex;flex-direction:column;gap:8px}
+  .status-list{display:flex;flex-direction:column;gap:10px}
   .status-row{display:flex;align-items:center;justify-content:space-between;font-size:13px}
   .status-name{display:flex;align-items:center;gap:8px}
-  .status-dot-sm{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .sdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
   .status-count{font-weight:700;font-size:15px}
   .status-hrs{font-size:11px;color:var(--hint)}
-
-  /* FILTERS */
   .filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-  .filter-bar select,.filter-bar input[type=date]{
-    padding:7px 28px 7px 11px;border:1px solid var(--border-md);border-radius:var(--rs);
-    font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);
-    -webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235a5a50' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 9px center;min-width:148px
-  }
+  .filter-bar select,.filter-bar input[type=date]{padding:7px 28px 7px 11px;border:1px solid var(--border-md);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%235a5a50' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;min-width:148px}
   .filter-bar input[type=date]{min-width:130px;padding-right:11px;background-image:none}
-  .filter-bar label{font-size:12px;color:var(--muted);white-space:nowrap}
   .filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--accent)}
-
-  /* TABLE */
   .sec-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
   .twrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
   .tscroll{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+  table{width:100%;border-collapse:collapse;font-size:12px}
   th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border)}
-  td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+  td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   tbody tr:hover td{background:var(--surface2)}
   .tfoot{padding:8px 12px;font-size:11px;color:var(--hint);text-align:right;border-top:1px solid var(--border);background:var(--surface2)}
-
-  /* BADGES */
   .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
-  .b-exec{background:var(--green-bg);color:var(--green)}
-  .b-wip{background:var(--amber-bg);color:var(--amber)}
-  .b-pend{background:var(--gray-bg);color:var(--gray)}
-  .b-late{background:var(--red-bg);color:var(--red)}
-
-  /* VARIAÇÃO */
-  .var-pos{color:var(--green);font-weight:700;font-size:11px}
-  .var-neg{color:var(--red);font-weight:700;font-size:11px}
+  .b-exec{background:var(--green-bg);color:var(--green)}.b-wip{background:var(--amber-bg);color:var(--amber)}
+  .b-pend{background:var(--gray-bg);color:var(--gray)}.b-late{background:var(--red-bg);color:var(--red)}
+  .var-pos{color:var(--green);font-weight:700;font-size:11px}.var-neg{color:var(--red);font-weight:700;font-size:11px}
   .var-neu{color:var(--hint);font-size:11px}
-
   .empty{text-align:center;padding:40px;color:var(--muted)}
   .empty-icon{font-size:26px;margin-bottom:8px;opacity:.35}
-  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+  .spin{display:inline-block;width:20px;height:20px;border:2px solid rgba(0,0,0,.1);border-top-color:#1A1A18;border-radius:50%;animation:sp .7s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
-  .dloading{display:none;text-align:center;padding:40px;color:var(--muted);font-size:13px}
-
+  .loading-screen{display:none;text-align:center;padding:60px 20px}
+  .loading-screen p{margin-top:12px;color:var(--muted);font-size:13px}
   @media(max-width:750px){
-    .kpis{grid-template-columns:1fr 1fr}.eficiencia-row{grid-template-columns:1fr}
+    .kpis{grid-template-columns:1fr 1fr}.efi-row{grid-template-columns:1fr}
     .charts{grid-template-columns:1fr}.hdr{padding:0 16px}.main{padding:18px 14px}
     .brand-text{display:none}
   }
@@ -148,6 +114,9 @@
     <button class="btn-s" onclick="loadData()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar
     </button>
+    <a class="btn-s" href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=K6-ri48kUUaY1h5TEvvgCt5KyKjLfdlHr2Ii6Js-UTlUODZURzBDWkRHTklJTEQ5TU5BRDNOREJDUy4u" target="_blank">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo lançamento
+    </a>
     <button class="btn-s" onclick="exportCSV()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
     </button>
@@ -155,180 +124,135 @@
 </header>
 
 <main class="main">
-
-  <!-- KPIs -->
-  <div class="kpis">
-    <div class="kpi ac"><div class="kpi-label">Horas estimadas</div><div class="kpi-val" id="k-est">—</div><div class="kpi-sub" id="k-dem">—</div></div>
-    <div class="kpi gn"><div class="kpi-label">Executadas</div><div class="kpi-val" id="k-exec">—</div><div class="prog-wrap"><div class="prog-bar" id="k-prog" style="width:0%"></div></div></div>
-    <div class="kpi am"><div class="kpi-label">Em andamento</div><div class="kpi-val" id="k-wip">—</div><div class="kpi-sub">demandas ativas</div></div>
-    <div class="kpi gy"><div class="kpi-label">Pendentes</div><div class="kpi-val" id="k-pend">—</div><div class="kpi-sub">aguardando início</div></div>
-    <div class="kpi rd"><div class="kpi-label">Atrasadas</div><div class="kpi-val" id="k-late">—</div><div class="kpi-sub">prazo vencido</div></div>
+  <div class="loading-screen" id="loading-screen">
+    <div class="spin"></div>
+    <p>Carregando dados do Microsoft Forms...</p>
   </div>
 
-  <!-- EFICIÊNCIA -->
-  <div class="eficiencia-row">
-    <div class="efi-card">
-      <div class="efi-icon">⏱</div>
-      <div>
-        <div class="efi-label">Total estimado</div>
-        <div class="efi-val efi-neutral" id="e-est">—</div>
-        <div class="efi-sub">horas previstas</div>
+  <div id="content" style="display:none">
+    <div class="kpis">
+      <div class="kpi ac"><div class="kpi-label">Horas estimadas</div><div class="kpi-val" id="k-est">—</div><div class="kpi-sub" id="k-dem">—</div></div>
+      <div class="kpi gn"><div class="kpi-label">Executadas</div><div class="kpi-val" id="k-exec">—</div><div class="prog-wrap"><div class="prog-bar" id="k-prog" style="width:0%"></div></div></div>
+      <div class="kpi am"><div class="kpi-label">Em andamento</div><div class="kpi-val" id="k-wip">—</div><div class="kpi-sub">demandas ativas</div></div>
+      <div class="kpi gy"><div class="kpi-label">Pendentes</div><div class="kpi-val" id="k-pend">—</div><div class="kpi-sub">aguardando início</div></div>
+      <div class="kpi rd"><div class="kpi-label">Atrasadas</div><div class="kpi-val" id="k-late">—</div><div class="kpi-sub">prazo vencido</div></div>
+    </div>
+    <div class="efi-row">
+      <div class="efi-card"><div class="efi-icon">⏱</div><div><div class="efi-label">Total estimado</div><div class="efi-val efi-neutral" id="e-est">—</div><div class="efi-sub">horas previstas</div></div></div>
+      <div class="efi-card"><div class="efi-icon">✅</div><div><div class="efi-label">Total realizado</div><div class="efi-val" id="e-real" style="color:var(--gray)">—</div><div class="efi-sub" id="e-var">aguardando dados</div></div></div>
+      <div class="efi-card"><div class="efi-icon">📊</div><div><div class="efi-label">Eficiência geral</div><div class="efi-val" id="e-pct" style="color:var(--gray)">—</div><div class="efi-sub" id="e-pct-sub">realizado ÷ estimado</div></div></div>
+    </div>
+    <div class="charts">
+      <div class="chart-card"><div class="chart-title">Horas por responsável — estimado vs realizado</div><div id="chart-resp"><div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div></div></div>
+      <div class="chart-card"><div class="chart-title">Distribuição por status</div><div class="status-list" id="status-list"></div></div>
+    </div>
+    <div class="sec-title">Histórico de demandas</div>
+    <div class="filter-bar">
+      <select id="flt-resp" onchange="render()"><option value="">Todos os responsáveis</option></select>
+      <select id="flt-status" onchange="render()">
+        <option value="">Todos os status</option>
+        <option>Pendente</option><option>Em andamento</option><option>Executado</option><option>Atrasado</option>
+      </select>
+      <label style="font-size:12px;color:var(--muted)">Período:</label>
+      <input type="date" id="flt-de" onchange="render()">
+      <span style="font-size:12px;color:var(--muted)">até</span>
+      <input type="date" id="flt-ate" onchange="render()">
+      <button class="btn-s" onclick="clearF()" style="min-width:unset;padding:7px 10px">✕ Limpar</button>
+    </div>
+    <div class="twrap">
+      <div class="tscroll">
+        <table>
+          <thead><tr>
+            <th style="width:100px">Número</th><th style="width:80px">Versão</th>
+            <th style="width:120px">Responsável</th><th>Demanda</th>
+            <th style="width:72px">Estimado</th><th style="width:75px">Realizado</th>
+            <th style="width:82px">Variação</th><th style="width:88px">Início</th>
+            <th style="width:88px">Fim</th><th style="width:200px">Status / Obs</th>
+          </tr></thead>
+          <tbody id="tbody"><tr><td colspan="10"><div class="empty"><div class="empty-icon">📋</div><p>Clique em "Atualizar" para carregar</p></div></td></tr></tbody>
+        </table>
       </div>
+      <div class="tfoot" id="tfoot"></div>
     </div>
-    <div class="efi-card">
-      <div class="efi-icon">✅</div>
-      <div>
-        <div class="efi-label">Total realizado</div>
-        <div class="efi-val" id="e-real" style="color:var(--gray)">—</div>
-        <div class="efi-sub" id="e-var">aguardando dados</div>
-      </div>
-    </div>
-    <div class="efi-card">
-      <div class="efi-icon">📊</div>
-      <div>
-        <div class="efi-label">Eficiência geral</div>
-        <div class="efi-val" id="e-pct" style="color:var(--gray)">—</div>
-        <div class="efi-sub" id="e-pct-sub">realizado ÷ estimado</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHARTS -->
-  <div class="charts">
-    <div class="chart-card">
-      <div class="chart-title">Horas por responsável — estimado vs realizado</div>
-      <div id="chart-resp"><div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Distribuição por status</div>
-      <div class="status-list" id="status-list">
-        <div class="empty"><div class="empty-icon">📋</div><p>Sem dados</p></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TABLE -->
-  <div class="sec-title">Histórico de demandas</div>
-  <div class="filter-bar">
-    <select id="flt-resp" onchange="render()"><option value="">Todos os responsáveis</option></select>
-    <select id="flt-status" onchange="render()">
-      <option value="">Todos os status</option>
-      <option>Pendente</option><option>Em andamento</option>
-      <option>Executado</option><option>Atrasado</option>
-    </select>
-    <label>Período:</label>
-    <input type="date" id="flt-de" onchange="render()" title="De">
-    <span style="font-size:12px;color:var(--muted)">até</span>
-    <input type="date" id="flt-ate" onchange="render()" title="Até">
-    <button class="btn-s" onclick="clearF()" style="min-width:unset;padding:7px 10px">✕ Limpar</button>
-  </div>
-
-  <div class="dloading" id="dloading">
-    <div class="spin" style="width:20px;height:20px;display:block;margin:0 auto 10px"></div>
-    Carregando dados...
-  </div>
-
-  <div class="twrap" id="twrap">
-    <div class="tscroll">
-      <table>
-        <colgroup>
-          <col style="width:100px"><col style="width:80px"><col style="width:120px">
-          <col style="width:*"><col style="width:72px"><col style="width:75px">
-          <col style="width:82px"><col style="width:88px"><col style="width:88px"><col style="width:200px">
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Número</th><th>Versão</th><th>Responsável</th><th>Demanda</th>
-            <th>Estimado</th><th>Realizado</th><th>Variação</th>
-            <th>Início</th><th>Fim</th><th>Status / Observações</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr><td colspan="10"><div class="empty"><div class="empty-icon">📋</div><p>Clique em "Atualizar" para carregar</p></div></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="tfoot" id="tfoot"></div>
   </div>
 </main>
 
+<div style="text-align:center;padding:16px 0 8px;font-size:11px;color:#9e9e94">
+  Controle de Horas — Grupo Maroni &nbsp;·&nbsp; v3.0 &nbsp;·&nbsp; Microsoft Forms
+</div>
+
 <script>
-const SHEET_ID   = '18PEQnwp4pUC-pWYJhHhSz2XgAZIsYtuM05LT5hH3fUQ';
-const SHEET_NAME = 'Controle de horas Devs';
+const SHARE_ID = 'u!aHR0cHM6Ly9ncnVwb3RyYW5zbWFyb25pLW15LnNoYXJlcG9pbnQuY29tLzp4Oi9nL3BlcnNvbmFsL21hcm9uaV90ZWNoX3RyYW5zbWFyb25pX2NvbV9ici9JUUR6ZHdneFM2RUtTSkVhd2xOOHlGMXFBWnVBZURkNGxnZDZ4cDd6SVFhTktGWT9lPTNTTXc1VA';
 let allRows = [];
 
-function setConn(s,m){
-  document.getElementById('cdot').className='cdot'+(s?' '+s:'');
-  document.getElementById('ctext').textContent=m;
-}
+function setConn(s,m){document.getElementById('cdot').className='cdot'+(s?' '+s:'');document.getElementById('ctext').textContent=m;}
 
-// converte Date(yyyy,m,d) do gviz para dd/mm/yyyy
-function fmtGviz(v) {
-  if(!v) return '';
-  const s = String(v);
-  const m = s.match(/Date\((\d+),(\d+),(\d+)/);
-  if(m){const d=String(m[3]).padStart(2,'0'),mo=String(parseInt(m[2])+1).padStart(2,'0');return d+'/'+mo+'/'+m[1];}
-  return s;
-}
-
-// converte dd/mm/yyyy para Date para comparações
-function toDate(s) {
-  if(!s) return null;
-  const p = s.split('/');
-  if(p.length===3) return new Date(p[2]+'-'+p[1]+'-'+p[0]);
-  if(s.includes('-')) return new Date(s);
+function toDate(s){
+  if(!s)return null;
+  if(typeof s==='number'){const d=new Date((s-25569)*86400*1000);return d;}
+  const p=String(s).split('/');
+  if(p.length===3)return new Date(p[2]+'-'+p[1]+'-'+p[0]);
+  if(String(s).includes('-'))return new Date(s);
   return null;
 }
 
-// detecta se demanda está atrasada (fim passou e não foi executada)
-function isAtrasado(r) {
-  if(r.status==='Executado') return false;
-  const fim = toDate(r.fim);
-  if(!fim) return false;
-  return fim < new Date();
+function fmtDate(s){
+  const d=toDate(s);
+  if(!d||isNaN(d))return '—';
+  return d.toLocaleDateString('pt-BR');
 }
 
-async function loadData() {
-  document.getElementById('dloading').style.display='block';
-  document.getElementById('twrap').style.display='none';
-  setConn('loading','Carregando...');
-  try {
-    let all=[],cursor;
-    const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=json.table.rows||[];
+function isAtrasado(r){
+  if(r.status==='Executado')return false;
+  const fim=toDate(r.fim);
+  if(!fim||isNaN(fim))return false;
+  return fim<new Date();
+}
 
-    allRows=rows.map(r=>{
-      const pr=r.c;
-      // status lido diretamente no row abaixo
+async function loadData(){
+  document.getElementById('loading-screen').style.display='block';
+  document.getElementById('content').style.display='none';
+  setConn('loading','Carregando...');
+
+  try{
+    const url=`https://api.onedrive.com/v1.0/shares/${SHARE_ID}/root/content`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const buf=await res.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+    // Pular linha de cabeçalho (linha 0)
+    // Colunas: 0=Id,1=HoraInicio,2=HoraFim,3=Email,4=Nome
+    // 5=Número/ID, 6=Versão, 7=Responsável, 8=Descrição
+    // 9=EstimadoH, 10=RealizadoH, 11=DataInício, 12=DataFim, 13=Status, 14=Obs
+    allRows=data.slice(1).filter(r=>r[5]||r[7]).map(r=>{
       const row={
-        num:    pr[0]?.v||'',
-        resp:   pr[1]?.v||'',
-        desc:   pr[2]?.v||'',
-        esfEst: (!pr[3]?.v||isNaN(parseFloat(pr[3]?.v)))?0:parseFloat(pr[3]?.v),
-        esfReal:(pr[4]?.v!==null&&pr[4]?.v!==undefined&&pr[4]?.v!==''&&!isNaN(parseFloat(pr[4]?.v)))?parseFloat(pr[4]?.v):null,
-        ini:    fmtGviz(pr[5]?.v),
-        fim:    fmtGviz(pr[6]?.v),
-        status: pr[7]?.v||'Pendente',
-        obs:    pr[8]?.v||'',
-        versao: pr[9]?.v||'',
+        num:    String(r[5]||''),
+        versao: String(r[6]||''),
+        resp:   String(r[7]||''),
+        desc:   String(r[8]||''),
+        esfEst: parseFloat(r[9])||0,
+        esfReal:r[10]!==''&&r[10]!==null&&r[10]!==undefined&&!isNaN(parseFloat(r[10]))?parseFloat(r[10]):null,
+        ini:    r[11]?fmtDate(r[11]):'',
+        fim:    r[12]?fmtDate(r[12]):'',
+        status: String(r[13]||'Pendente'),
+        obs:    String(r[14]||''),
       };
-      // atrasado é indicador separado — não sobrescreve status real do dev
-      row.atrasado = isAtrasado(row);
+      row.atrasado=isAtrasado(row);
       return row;
-    }).filter(r=>r.resp);
+    });
 
     populateFilters();render();
     setConn('ok','Atualizado');
-  } catch(e) {
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('content').style.display='block';
+  }catch(e){
     setConn('err','Erro ao carregar');
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('content').style.display='block';
     document.getElementById('tbody').innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">⚠️</div><p>${e.message}</p></div></td></tr>`;
-    document.getElementById('twrap').style.display='block';
-  } finally {
-    document.getElementById('dloading').style.display='none';
-    document.getElementById('twrap').style.display='block';
   }
 }
 
@@ -346,32 +270,27 @@ function render(){
   const fAte=document.getElementById('flt-ate').value;
 
   const fil=allRows.filter(r=>{
-    if(fR && r.resp!==fR) return false;
-    if(fS==='Atrasado' && !r.atrasado) return false;
-    if(fS && fS!=='Atrasado' && r.status!==fS) return false;
+    if(fR&&r.resp!==fR)return false;
+    if(fS==='Atrasado'&&!r.atrasado)return false;
+    if(fS&&fS!=='Atrasado'&&r.status!==fS)return false;
     if(fDe||fAte){
       const ref=toDate(r.ini)||toDate(r.fim);
-      if(ref){
-        if(fDe && ref<new Date(fDe)) return false;
-        if(fAte && ref>new Date(fAte+'T23:59:59')) return false;
-      }
+      if(ref){if(fDe&&ref<new Date(fDe))return false;if(fAte&&ref>new Date(fAte+'T23:59:59'))return false;}
     }
     return true;
   });
 
-  // KPIs
   const totalEst=fil.reduce((a,r)=>a+r.esfEst,0);
-  const comReal=fil.filter(r=>r.esfReal!==null&&r.esfReal!=='');
+  const comReal=fil.filter(r=>r.esfReal!==null);
   const totalReal=comReal.reduce((a,r)=>a+(r.esfReal||0),0);
   const exec=fil.filter(r=>r.status==='Executado').length;
   const wip=fil.filter(r=>r.status==='Em andamento').length;
   const pend=fil.filter(r=>r.status==='Pendente').length;
   const late=fil.filter(r=>r.atrasado).length;
   const pct=fil.length?Math.round(exec/fil.length*100):0;
-  // eficiência: soma estimado SOMENTE das demandas que têm realizado preenchido
-  const estParaReal=comReal.reduce((a,r)=>a+r.esfEst,0);
-  const efiPct=estParaReal>0&&comReal.length>0?Math.round(totalReal/estParaReal*100):null;
-  const varH=comReal.length>0?totalReal-estParaReal:null;
+  const estReal=comReal.reduce((a,r)=>a+r.esfEst,0);
+  const efiPct=estReal>0?Math.round(totalReal/estReal*100):null;
+  const varH=comReal.length>0?totalReal-estReal:null;
 
   document.getElementById('k-est').textContent=totalEst+'h';
   document.getElementById('k-dem').textContent=fil.length+' demanda'+(fil.length!==1?'s':'');
@@ -380,133 +299,49 @@ function render(){
   document.getElementById('k-pend').textContent=pend;
   document.getElementById('k-late').textContent=late;
   document.getElementById('k-prog').style.width=pct+'%';
-
-  // Eficiência
   document.getElementById('e-est').textContent=totalEst+'h';
+
   const eReal=document.getElementById('e-real');
   eReal.textContent=comReal.length>0?totalReal+'h':'—';
   eReal.className='efi-val '+(efiPct!==null?(efiPct<=100?'efi-ok':'efi-warn'):'efi-neutral');
-
   const eVar=document.getElementById('e-var');
-  if(varH!==null){
-    const sign=varH<=0?'':'+';
-    eVar.textContent=`${sign}${varH}h vs estimado`;
-    eVar.style.color=varH<=0?'var(--green)':'var(--red)';
-  } else { eVar.textContent='aguardando realizado'; eVar.style.color=''; }
+  if(varH!==null){const sign=varH<=0?'':'+';eVar.textContent=sign+varH+'h vs estimado';eVar.style.color=varH<=0?'var(--green)':'var(--red)';}
+  else{eVar.textContent='aguardando realizado';eVar.style.color='';}
+  const ePct=document.getElementById('e-pct'),ePctSub=document.getElementById('e-pct-sub');
+  if(efiPct!==null){ePct.textContent=efiPct+'%';ePct.className='efi-val '+(efiPct<=100?'efi-ok':'efi-warn');ePctSub.textContent=efiPct<=100?`${comReal.length} demanda(s) dentro do estimado ✓`:`${comReal.length} demanda(s) acima do estimado ⚠`;}
+  else{ePct.textContent='—';ePct.className='efi-val efi-neutral';ePctSub.textContent='realizado ÷ estimado';}
 
-  const ePct=document.getElementById('e-pct');
-  const ePctSub=document.getElementById('e-pct-sub');
-  if(efiPct!==null){
-    ePct.textContent=efiPct+'%';
-    ePct.className='efi-val '+(efiPct<=100?'efi-ok':'efi-warn');
-    ePctSub.textContent=efiPct<=100?`${comReal.length} demanda(s) dentro do estimado ✓`:`${comReal.length} demanda(s) acima do estimado ⚠`;
-  } else { ePct.textContent='—'; ePct.className='efi-val efi-neutral'; ePctSub.textContent='realizado ÷ estimado'; }
-
-  // Chart: horas por responsável
   const byResp={};
-  fil.forEach(r=>{
-    if(!byResp[r.resp]) byResp[r.resp]={est:0,real:0};
-    byResp[r.resp].est+=r.esfEst;
-    if(r.esfReal) byResp[r.resp].real+=(r.esfReal||0);
-  });
+  fil.forEach(r=>{if(!byResp[r.resp])byResp[r.resp]={est:0,real:0};byResp[r.resp].est+=r.esfEst;if(r.esfReal)byResp[r.resp].real+=(r.esfReal||0);});
   const sorted=Object.entries(byResp).sort((a,b)=>b[1].est-a[1].est).slice(0,7);
   const maxEst=sorted[0]?.[1].est||1;
   const chartEl=document.getElementById('chart-resp');
-  if(!sorted.length){chartEl.innerHTML='<div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div>';} else {
-    chartEl.innerHTML=sorted.map(([name,v])=>`
-      <div class="bar-item">
-        <div class="bar-meta">
-          <span class="bar-name">${name}</span>
-          <span class="bar-vals">
-            <span class="bar-est">${v.est}h est.</span>
-            ${v.real?`<span class="bar-real">${v.real}h real</span>`:'<span style="font-size:10px;color:var(--hint);font-style:italic">real. pendente</span>'}
-          </span>
-        </div>
-        <div class="bar-track" style="height:7px">
-          <div class="bar-est-fill" style="width:${(v.est/maxEst*100).toFixed(1)}%"></div>
-          ${v.real?`<div class="bar-real-fill" style="width:${Math.min(v.real/maxEst*100,100).toFixed(1)}%"></div>`:''}
-        </div>
-      </div>`).join('');
-  }
+  chartEl.innerHTML=sorted.length?sorted.map(([name,v])=>`<div class="bar-item"><div class="bar-meta"><span class="bar-name">${name}</span><span class="bar-vals"><span style="color:var(--hint)">${v.est}h est.</span>${v.real?`<span class="bar-real">${v.real}h real</span>`:'<span style="font-size:10px;color:var(--hint);font-style:italic">real. pendente</span>'}</span></div><div class="bar-track"><div class="bar-est-fill" style="width:${(v.est/maxEst*100).toFixed(1)}%"></div>${v.real?`<div class="bar-real-fill" style="width:${Math.min(v.real/maxEst*100,100).toFixed(1)}%"></div>`:''}</div></div>`).join(''):'<div class="empty"><div class="empty-icon">📊</div><p>Sem dados</p></div>';
 
-  // Status list
-  const statusCfg=[
-    {k:'Executado',dot:'#639922',fn:r=>r.status==='Executado'},
-    {k:'Em andamento',dot:'#EF9F27',fn:r=>r.status==='Em andamento'},
-    {k:'Pendente',dot:'#B4B2A9',fn:r=>r.status==='Pendente'},
-    {k:'⚠ Atrasado',dot:'#E24B4A',fn:r=>r.atrasado},
-  ];
-  const sList=document.getElementById('status-list');
-  sList.innerHTML=statusCfg.map(s=>{
-    const cnt=fil.filter(s.fn).length;
-    const hrs=fil.filter(s.fn).reduce((a,r)=>a+r.esfEst,0);
-    return `<div class="status-row">
-      <div class="status-name">
-        <div class="status-dot-sm" style="background:${s.dot}"></div>
-        <span>${s.k}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="status-hrs">${hrs}h</span>
-        <span class="status-count">${cnt}</span>
-      </div>
-    </div>`;
-  }).join('');
+  const sCfg=[{k:'Executado',dot:'#639922',fn:r=>r.status==='Executado'},{k:'Em andamento',dot:'#EF9F27',fn:r=>r.status==='Em andamento'},{k:'Pendente',dot:'#B4B2A9',fn:r=>r.status==='Pendente'},{k:'⚠ Atrasado',dot:'#E24B4A',fn:r=>r.atrasado}];
+  document.getElementById('status-list').innerHTML=sCfg.map(s=>{const cnt=fil.filter(s.fn).length,hrs=fil.filter(s.fn).reduce((a,r)=>a+r.esfEst,0);return`<div class="status-row"><div class="status-name"><div class="sdot" style="background:${s.dot}"></div><span>${s.k}</span></div><div style="display:flex;align-items:center;gap:10px"><span class="status-hrs">${hrs}h</span><span class="status-count">${cnt}</span></div></div>`;}).join('');
 
-  // Tabela
-  function varCell(est,real){
-    if(real===null||real===''||isNaN(real)) return '<span class="var-neu">—</span>';
-    const d=real-est;
-    const sign=d<=0?'':'+';
-    const cls=d<=0?'var-pos':'var-neg';
-    const ico=d<=0?'▼':'▲';
-    return `<span class="${cls}">${ico} ${sign}${d}h</span>`;
-  }
-  function badge(r){
-    const s=r.status;
-    const c=s==='Executado'?'b-exec':s==='Em andamento'?'b-wip':'b-pend';
-    const atrasado=r.atrasado?`<span class="badge b-late" style="margin-left:4px">⚠ atrasado</span>`:'';
-    return `<span class="badge ${c}">${s}</span>${atrasado}`;
-  }
+  function varCell(est,real){if(real===null||real===''||isNaN(real))return'<span class="var-neu">—</span>';const d=real-est,sign=d<=0?'':'+',cls=d<=0?'var-pos':'var-neg',ico=d<=0?'▼':'▲';return`<span class="${cls}">${ico} ${sign}${d}h</span>`;}
+  function badge(r){const s=r.status,c=s==='Executado'?'b-exec':s==='Em andamento'?'b-wip':'b-pend',atl=r.atrasado?`<span class="badge b-late" style="margin-left:4px">⚠ atrasado</span>`:'';return`<span class="badge ${c}">${s}</span>${atl}`;}
 
   const tbody=document.getElementById('tbody');
-  if(!fil.length){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro encontrado.</p></div></td></tr>`;
-    document.getElementById('tfoot').textContent='';return;
-  }
+  if(!fil.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro.</p></div></td></tr>`;document.getElementById('tfoot').textContent='';return;}
   tbody.innerHTML=[...fil].reverse().map(r=>`<tr>
-    <td title="${r.num}">${r.num||'—'}</td>
-    <td title="${r.versao||''}">${r.versao||'—'}</td>
-    <td title="${r.resp}">${r.resp||'—'}</td>
-    <td title="${r.desc}" style="max-width:180px">${r.desc||'—'}</td>
-    <td>${r.esfEst?r.esfEst+'h':'—'}</td>
-    <td>${r.esfReal!==null&&r.esfReal!==''?r.esfReal+'h':'—'}</td>
-    <td>${varCell(r.esfEst,r.esfReal)}</td>
-    <td>${r.ini||'—'}</td>
-    <td>${r.fim||'—'}</td>
-    <td style="white-space:normal;min-width:160px;vertical-align:top">
-      <div style="display:flex;flex-direction:column;gap:4px;padding-top:2px">
-        ${badge(r)}
-        ${r.obs?`<span style="font-size:11px;color:var(--muted);line-height:1.4;white-space:normal">${r.obs}</span>`:''}
-      </div>
-    </td>
+    <td title="${r.num}">${r.num||'—'}</td><td title="${r.versao}">${r.versao||'—'}</td>
+    <td title="${r.resp}">${r.resp||'—'}</td><td title="${r.desc}">${r.desc||'—'}</td>
+    <td>${r.esfEst?r.esfEst+'h':'—'}</td><td>${r.esfReal!==null?r.esfReal+'h':'—'}</td>
+    <td>${varCell(r.esfEst,r.esfReal)}</td><td>${r.ini||'—'}</td><td>${r.fim||'—'}</td>
+    <td style="white-space:normal;min-width:160px;vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px;padding-top:2px">${badge(r)}${r.obs?`<span style="font-size:11px;color:var(--muted);line-height:1.4;white-space:normal">${r.obs}</span>`:''}</div></td>
   </tr>`).join('');
-
-  const totalRealDisp=comReal.length>0?` · ${totalReal}h realizado`:'';
-  document.getElementById('tfoot').textContent=`${fil.length} demanda${fil.length!==1?'s':''} · ${totalEst}h estimado${totalRealDisp}`;
+  document.getElementById('tfoot').textContent=`${fil.length} demanda${fil.length!==1?'s':''} · ${totalEst}h estimado${comReal.length>0?' · '+totalReal+'h realizado':''}`;
 }
 
-function clearF(){
-  ['flt-resp','flt-status','flt-de','flt-ate'].forEach(id=>document.getElementById(id).value='');
-  render();
-}
+function clearF(){['flt-resp','flt-status','flt-de','flt-ate'].forEach(id=>document.getElementById(id).value='');render();}
 
 function exportCSV(){
-  const fR=document.getElementById('flt-resp').value;
-  const fS=document.getElementById('flt-status').value;
-  const fil=allRows.filter(r=>(!fR||r.resp===fR)&&(!fS||r.status===fS));
-  if(!fil.length){alert('Nenhum dado para exportar.');return;}
-  const h='Número,Versão,Responsável,Demanda,"Est. (h)","Real. (h)",Início,Fim,Status,Observações\n';
-  const b=fil.map(r=>[r.num,`"${r.versao}"`,`"${r.resp}"`,`"${r.desc}"`,r.esfEst,r.esfReal||'',r.ini,r.fim,r.status,`"${r.obs}"`].join(',')).join('\n');
+  if(!allRows.length){alert('Nenhum dado.');return;}
+  const h='Número,Versão,Responsável,Demanda,"Est.(h)","Real.(h)",Início,Fim,Status,Observações\n';
+  const b=allRows.map(r=>[r.num,`"${r.versao}"`,`"${r.resp}"`,`"${r.desc}"`,r.esfEst,r.esfReal||'',r.ini,r.fim,r.status,`"${r.obs}"`].join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+b],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='controle_horas_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
