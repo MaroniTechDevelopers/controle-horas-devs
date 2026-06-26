@@ -164,8 +164,15 @@ async function salvar() {
     al.textContent = 'Preencha os campos obrigatórios: Número, Responsável, Demanda e Esforço estimado.';
     al.className = 'alert err'; return;
   }
-
+  if (ini && fim && fim < ini) {
+    al.textContent = 'A data fim não pode ser anterior à data início.';
+    al.className = 'alert err'; return;
+  }
   const btn = document.getElementById('btn-salvar');
+  if (!isNaN(esfReal) && esfReal > 0 && esfReal > esfEst * 1.5) {
+    const confirma = confirm(`O realizado (${esfReal}h) está ${Math.round(esfReal/esfEst*100)}% acima do estimado (${esfEst}h). Confirma o lançamento?`);
+    if (!confirma) return;
+  }
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Enviando...';
 
