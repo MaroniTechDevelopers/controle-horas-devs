@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carga Inicial — Grupo Maroni</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9f7f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:14px;padding:32px;max-width:560px;width:100%;box-shadow:0 2px 8px rgba(0,0,0,0.07)}
+  .logo{text-align:center;margin-bottom:24px}
+  .logo-bar{display:inline-block;background:#FFD700;padding:10px 28px;border-radius:10px;font-size:18px;font-weight:900;color:#1A1A18;letter-spacing:1px}
+  h2{font-size:18px;font-weight:700;margin-bottom:6px;color:#1A1A18}
+  p{font-size:13px;color:#6b6b64;margin-bottom:20px}
+  .list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+  .item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;font-size:13px}
+  .num{font-weight:700;color:#1A1A18;min-width:100px}
+  .desc{color:#5a5a50;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .horas{font-weight:700;color:#1A1A18;white-space:nowrap}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+  .status-dot.ok{background:#639922}
+  .status-dot.err{background:#E24B4A}
+  .status-dot.loading{background:#EF9F27;animation:pulse .8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .btn{width:100%;padding:13px;background:#FFD700;color:#1A1A18;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+  .btn:hover{background:#E6C200}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .summary{text-align:center;padding:20px;display:none}
+  .summary.show{display:block}
+  .summary .big{font-size:42px;margin-bottom:8px}
+  .summary h3{font-size:18px;font-weight:700;margin-bottom:6px}
+  .summary p{font-size:13px;color:#6b6b64}
+  .spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(0,0,0,.2);border-top-color:#1A1A18;border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .progress{background:#f0efe9;border-radius:20px;height:6px;margin-top:16px;overflow:hidden}
+  .progress-bar{height:6px;border-radius:20px;background:#FFD700;width:0%;transition:width .4s}
+  .log{font-size:11px;color:#9e9e94;text-align:center;margin-top:8px;height:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><div class="logo-bar">🦏 GRUPO MARONI</div></div>
+  <h2>Carga inicial de demandas</h2>
+  <p>6 registros prontos para enviar ao sistema de controle de horas.</p>
+
+  <div class="list" id="list">
+    <div class="item"><div class="status-dot" id="d0"></div><span class="num">2603090111</span><span class="desc">Heineken — vale pedágio</span><span class="horas">90h</span></div>
+    <div class="item"><div class="status-dot" id="d1"></div><span class="num">2603110672</span><span class="desc">Integração tipo operação embarcador</span><span class="horas">20h</span></div>
+    <div class="item"><div class="status-dot" id="d2"></div><span class="num">2605070306</span><span class="desc">Melhoria etapa 2, Shopee</span><span class="horas">24h</span></div>
+    <div class="item"><div class="status-dot" id="d3"></div><span class="num">2605120263</span><span class="desc">Melhoria relatório MDF-e</span><span class="horas">40h</span></div>
+    <div class="item"><div class="status-dot" id="d4"></div><span class="num">2605250640</span><span class="desc">Relatório controle coleta e entrega</span><span class="horas">16h</span></div>
+    <div class="item"><div class="status-dot" id="d5"></div><span class="num">2604170242</span><span class="desc">Integração complemento Electrolux</span><span class="horas">90h</span></div>
+  </div>
+
+  <div class="progress"><div class="progress-bar" id="prog"></div></div>
+  <div class="log" id="log">Pronto para enviar</div>
+
+  <div id="summary" class="summary">
+    <div class="big">✅</div>
+    <h3>Carga concluída!</h3>
+    <p>6 demandas · 280h enviadas para o Google Sheets.</p>
+    <p style="margin-top:8px"><a href="https://maronitechdevelopers.github.io/controle-horas-devs/dash.html" style="color:#534AB7;font-weight:600">Abrir painel →</a></p>
+  </div>
+
+  <button class="btn" id="btn" onclick="enviar()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    Enviar todos os registros
+  </button>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbys-n1WJ4KdO70S2ckl92EHj9WLkDasfEzbGWf-GPqY0Q1zT2sI3SwdIrG6_6uLIt6d6g/exec';
+
+const registros = [
+  {num:"2603090111",resp:"A definir",desc:"Emissão embarcador Heineken - automatização de importação do vale pedágio",esf:90,ini:"2026-03-16",fim:"",status:"Em andamento",obs:"Em desenvolvimento | Data comitê: 10/04",data:"25/06/2026 21:00:00"},
+  {num:"2603110672",resp:"A definir",desc:"Integração do tipo de operação embarcador",esf:20,ini:"2026-03-11",fim:"",status:"Em andamento",obs:"Em desenvolvimento | Sem data de comitê",data:"25/06/2026 21:00:00"},
+  {num:"2605070306",resp:"A definir",desc:"Melhoria etapa 2, Shopee",esf:24,ini:"2026-05-07",fim:"",status:"Em andamento",obs:"Aguardando teste QA | Data comitê: 15/05",data:"25/06/2026 21:00:00"},
+  {num:"2605120263",resp:"A definir",desc:"Melhoria relatório MDF-e",esf:40,ini:"2026-05-12",fim:"",status:"Em andamento",obs:"Aguardando teste QA | Sem data de comitê",data:"25/06/2026 21:00:00"},
+  {num:"2605250640",resp:"A definir",desc:"Ajustes no relatório de controle de coleta e entrega",esf:16,ini:"2026-05-26",fim:"",status:"Em andamento",obs:"Aguardando teste QA | Sem data de comitê",data:"25/06/2026 21:00:00"},
+  {num:"2604170242",resp:"A definir",desc:"Integração complemento Electrolux",esf:90,ini:"2026-04-17",fim:"",status:"Em andamento",obs:"Em validação com QA | Data comitê: 30/04",data:"25/06/2026 21:00:00"}
+];
+
+async function enviar() {
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+
+  for (let i = 0; i < registros.length; i++) {
+    const dot = document.getElementById('d'+i);
+    const log = document.getElementById('log');
+    const prog = document.getElementById('prog');
+
+    dot.className = 'status-dot loading';
+    log.textContent = `Enviando ${i+1} de ${registros.length}: ${registros[i].num}...`;
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(registros[i])
+      });
+      dot.className = 'status-dot ok';
+    } catch(e) {
+      dot.className = 'status-dot err';
+    }
+
+    prog.style.width = ((i+1)/registros.length*100) + '%';
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  log.textContent = 'Concluído!';
+  document.getElementById('list').style.display = 'none';
+  document.getElementById('summary').classList.add('show');
+  btn.style.display = 'none';
+}
+</script>
+</body>
+</html>
