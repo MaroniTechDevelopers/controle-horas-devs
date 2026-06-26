@@ -164,7 +164,7 @@ function toggleResp(val) {
   }
 }
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHhQ_n2X7BvZErTXHlNd3PYHuohmi75N-4No7SlBLHiJSI41o2xxqHNLyzC8ln9ixZMg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9vYORGwekT4a9-LsIFPX9Vks7YthvbMlLTwJq2mR3TrV8aGLSKU3WIx7KzKSrxXqTgA/exec';
 
 async function salvar() {
   const num     = document.getElementById('f-num').value.trim();
@@ -203,11 +203,28 @@ async function salvar() {
     data: new Date().toLocaleString('pt-BR') };
 
   try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+    // Usar form submit via iframe para contornar CORS garantindo entrega
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = 'hidden-iframe';
+    form.style.display = 'none';
+
+    // Adicionar todos os campos como inputs hidden
+    Object.entries(payload).forEach(([key, val]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = val !== undefined && val !== null ? val : '';
+      form.appendChild(input);
     });
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    // Aguarda 2s e mostra sucesso
+    await new Promise(r => setTimeout(r, 2000));
     document.getElementById('form-area').style.display = 'none';
     document.getElementById('success').classList.add('show');
   } catch(e) {
@@ -232,5 +249,6 @@ function novo() {
   btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar lançamento';
 }
 </script>
+<iframe name="hidden-iframe" style="display:none"></iframe>
 </body>
 </html>
