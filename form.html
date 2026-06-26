@@ -203,37 +203,20 @@ async function salvar() {
     data: new Date().toLocaleString('pt-BR') };
 
   try {
-    // JSONP — único método que funciona 100% com Apps Script sem CORS
-    await new Promise((resolve, reject) => {
-      const cbName = 'cb_' + Date.now();
-      const timeout = setTimeout(() => {
-        delete window[cbName];
-        reject(new Error('Timeout'));
-      }, 15000);
-
-      window[cbName] = (resp) => {
-        clearTimeout(timeout);
-        delete window[cbName];
-        if (resp && resp.ok) resolve(resp);
-        else reject(new Error(resp?.error || 'Erro desconhecido'));
-      };
-
-      const params = new URLSearchParams({...payload, callback: cbName});
-      const script = document.createElement('script');
-      script.src = SCRIPT_URL + '?' + params.toString();
-      script.onerror = () => {
-        clearTimeout(timeout);
-        delete window[cbName];
-        reject(new Error('Script error'));
-      };
-      document.head.appendChild(script);
-      setTimeout(() => document.head.removeChild(script), 20000);
-    });
-
+    // GET com URLSearchParams — funciona sem CORS com Apps Script
+    const params = new URLSearchParams();
+    Object.entries(payload).forEach(([k,v]) => params.append(k, v ?? ''));
+    
+    const img = new Image();
+    img.src = SCRIPT_URL + '?' + params.toString();
+    
+    // Aguarda 3s para garantir que o request chegou
+    await new Promise(r => setTimeout(r, 3000));
+    
     document.getElementById('form-area').style.display = 'none';
     document.getElementById('success').classList.add('show');
   } catch(e) {
-    al.textContent = 'Erro ao enviar: ' + e.message + '. Verifique sua conexão.';
+    al.textContent = 'Erro ao enviar. Tente novamente.';
     al.className = 'alert err';
     btn.disabled = false;
     btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enviar lançamento';
