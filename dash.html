@@ -302,17 +302,17 @@ async function loadData() {
 
     allRows=rows.map(r=>{
       const pr=r.c;
-      const status=pr[8]?.v||'Pendente';
+      // status lido diretamente no row abaixo
       const row={
         num:    pr[0]?.v||'',
         resp:   pr[1]?.v||'',
         desc:   pr[2]?.v||'',
         esfEst: parseFloat(pr[3]?.v)||0,
-        esfReal:parseFloat(pr[4]?.v)||null,
+        esfReal:pr[4]?.v!==null&&pr[4]?.v!==undefined&&pr[4]?.v!==''?parseFloat(pr[4]?.v):null,
         ini:    fmtGviz(pr[5]?.v),
         fim:    fmtGviz(pr[6]?.v),
-        status: status,
-        obs:    pr[7]?.v||'',
+        status: pr[7]?.v||'Pendente',
+        obs:    pr[8]?.v||'',
         versao: pr[9]?.v||'',
       };
       // auto-detecta atrasado
